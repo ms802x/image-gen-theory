@@ -27,6 +27,7 @@ User preferences:
 - When creating a notebook, cite the sources it combines and explain which parts came from which upstream idea.
 - Notebooks should teach differences between approaches, failure modes, tensor shapes, training objectives, and sampling behavior.
 - The user wants to understand, not blindly apply recipes.
+- Keep public documentation README-first. Do not add new Markdown files unless the user explicitly asks; prefer updating `README.md`, notebooks, or scripts.
 
 Current repo remote:
 
