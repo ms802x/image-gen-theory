@@ -1,0 +1,6 @@
+.venv/
+.miniforge/
+__pycache__/
+.ipynb_checkpoints/
+executed/
+*.pyc

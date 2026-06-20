@@ -51,16 +51,31 @@ COMMON_SETUP = r"""
 import math
 import random
 from pathlib import Path
+from io import BytesIO
 
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
 import torch.nn.functional as F
+from IPython.display import Image, display
 
 torch.manual_seed(7)
 random.seed(7)
+torch.set_num_threads(1)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("device:", device)
+
+
+def show_plot():
+    fig = plt.gcf()
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=120)
+    display(Image(data=buf.getvalue()))
+    plt.close(fig)
+"""
+
+GPU_NOTE = """
+> CPU smoke run: this notebook is designed to execute quickly on CPU to verify mechanics, tensor shapes, plotting, and sampler logic. Generated samples may look like noise because the default training loop is intentionally tiny. Treat noisy samples as undertraining, not as evidence that the method is wrong. For meaningful visual quality, run longer on a GPU by increasing training steps, batch size, diffusion steps, and model width.
 """
 
 
@@ -92,7 +107,7 @@ def make_shape_batch(batch=64, size=32, with_text=True):
     for _ in range(batch):
         color_name = random.choice(list(COLORS))
         shape_name = random.choice(SHAPES)
-        color = COLORS[color_name][:, None, None]
+        color = COLORS[color_name][:, None]
         scale = random.uniform(0.42, 0.72)
         img = torch.zeros(3, size, size)
         if shape_name == "circle":
@@ -122,13 +137,13 @@ def show_images(images, titles=None, n=16, size=2.0):
             if titles:
                 ax.set_title(titles[i], fontsize=8)
     plt.tight_layout()
-    plt.show()
+    show_plot()
 """
 
 
 DIFFUSION = r"""
-T = 64
-betas = torch.linspace(1e-4, 0.035, T, device=device)
+T = 8
+betas = torch.linspace(1e-4, 0.05, T, device=device)
 alphas = 1.0 - betas
 alpha_bars = torch.cumprod(alphas, dim=0)
 
@@ -244,6 +259,8 @@ def hw1():
 
 Question: how can a model learn to move noise into data?
 
+""" + GPU_NOTE + r"""
+
 Sources:
 
 - TorchCFM 2D tutorials: https://github.com/atong01/conditional-flow-matching/tree/main/examples/2D_tutorials
@@ -273,7 +290,7 @@ for ax, pts, title in [(axes[0], noise, "source noise"), (axes[1], data, "target
     ax.scatter(pts[:, 0], pts[:, 1], s=3)
     ax.set_title(title)
     ax.axis("equal")
-plt.show()
+show_plot()
 """),
         md(r"""
 ## Training Target
@@ -310,8 +327,8 @@ print(sum(p.numel() for p in model.parameters()), "parameters")
 """),
         code(r"""
 losses = []
-for step in range(2500):
-    x1 = sample_moons(512).to(device)
+for step in range(80):
+    x1 = sample_moons(128).to(device)
     x0 = torch.randn_like(x1)
     t = torch.rand(x1.shape[0], 1, device=device)
     xt = (1 - t) * x0 + t * x1
@@ -322,23 +339,23 @@ for step in range(2500):
     loss.backward()
     opt.step()
     losses.append(loss.item())
-    if step % 500 == 0:
+    if step % 20 == 0:
         print(step, round(loss.item(), 4))
 
 plt.plot(losses)
 plt.title("flow matching loss")
-plt.show()
+show_plot()
 """),
         code(r"""
 @torch.no_grad()
-def sample_flow(n=2048, steps=80, keep_trajectory=True):
+def sample_flow(n=512, steps=24, keep_trajectory=True):
     x = torch.randn(n, 2, device=device)
     trajectory = [(0, x.cpu())]
     dt = 1.0 / steps
     for i in range(steps):
         t = torch.full((n,), i / steps, device=device)
         x = x + dt * model(x, t)
-        if keep_trajectory and i in [9, 19, 39, 59, 79]:
+        if keep_trajectory and i in [5, 11, 17, 23]:
             trajectory.append((i + 1, x.cpu()))
     return x.cpu(), trajectory
 
@@ -350,7 +367,7 @@ for ax, (step, pts) in zip(axes, trajectory):
     ax.set_title(f"step {step}")
     ax.axis("equal")
     ax.axis("off")
-plt.show()
+show_plot()
 """),
         code(r"""
 @torch.no_grad()
@@ -363,7 +380,7 @@ def plot_velocity_field(t_value=0.5):
     plt.quiver(pts.cpu()[:, 0], pts.cpu()[:, 1], v[:, 0], v[:, 1], angles="xy")
     plt.title(f"learned velocity field at t={t_value}")
     plt.axis("equal")
-    plt.show()
+    show_plot()
 
 
 plot_velocity_field(0.5)
@@ -386,6 +403,8 @@ def hw2():
 
 Question: how is denoising different from flow?
 
+""" + GPU_NOTE + r"""
+
 Sources:
 
 - DDPM: https://arxiv.org/abs/2006.11239
@@ -406,7 +425,7 @@ def sample_moons(n, noise=0.06):
     return (x - x.mean(0)) / x.std(0)
 
 
-T = 100
+T = 24
 betas = torch.linspace(1e-4, 0.04, T, device=device)
 alphas = 1.0 - betas
 alpha_bars = torch.cumprod(alphas, dim=0)
@@ -420,7 +439,7 @@ def q_sample(x0, t, eps=None):
 """),
         code(r"""
 x0 = sample_moons(2500).to(device)
-timesteps = [0, 10, 30, 60, 99]
+timesteps = [0, 4, 8, 16, 23]
 fig, axes = plt.subplots(1, len(timesteps), figsize=(15, 3))
 for ax, ti in zip(axes, timesteps):
     t = torch.full((x0.shape[0],), ti, device=device, dtype=torch.long)
@@ -430,7 +449,7 @@ for ax, ti in zip(axes, timesteps):
     ax.set_title(f"t={ti}")
     ax.axis("equal")
     ax.axis("off")
-plt.show()
+show_plot()
 """),
         code(r"""
 class DenoiseMLP(nn.Module):
@@ -453,8 +472,8 @@ opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
 """),
         code(r"""
 losses = []
-for step in range(3500):
-    x0 = sample_moons(512).to(device)
+for step in range(100):
+    x0 = sample_moons(128).to(device)
     t = torch.randint(0, T, (x0.shape[0],), device=device)
     xt, eps = q_sample(x0, t)
     pred_eps = model(xt, t)
@@ -463,16 +482,16 @@ for step in range(3500):
     loss.backward()
     opt.step()
     losses.append(loss.item())
-    if step % 500 == 0:
+    if step % 25 == 0:
         print(step, round(loss.item(), 4))
 
 plt.plot(losses)
 plt.title("DDPM noise prediction loss")
-plt.show()
+show_plot()
 """),
         code(r"""
 @torch.no_grad()
-def sample_ddpm(n=2048):
+def sample_ddpm(n=512):
     x = torch.randn(n, 2, device=device)
     snapshots = []
     for ti in reversed(range(T)):
@@ -481,7 +500,7 @@ def sample_ddpm(n=2048):
         pred_eps = model(x, t)
         mean = (1 / alpha.sqrt()) * (x - beta / (1 - ab).sqrt() * pred_eps)
         x = mean if ti == 0 else mean + beta.sqrt() * torch.randn_like(x)
-        if ti in [99, 75, 50, 25, 0]:
+        if ti in [23, 16, 8, 4, 0]:
             snapshots.append((ti, x.cpu()))
     return x.cpu(), snapshots
 
@@ -493,7 +512,7 @@ for ax, (ti, pts) in zip(axes, snapshots):
     ax.set_title(f"t={ti}")
     ax.axis("equal")
     ax.axis("off")
-plt.show()
+show_plot()
 """),
         md(r"""
 ## Diffusion vs Flow
@@ -518,6 +537,8 @@ def hw3():
 
 Question: what changes when the data is an image instead of a 2D point?
 
+""" + GPU_NOTE + r"""
+
 Sources:
 
 - DDPM: https://arxiv.org/abs/2006.11239
@@ -528,15 +549,16 @@ Sources:
         code(SHAPES),
         code(DIFFUSION),
         code(r"""
-images = make_shape_batch(16, with_text=False)
-show_images(images, n=16)
+images = make_shape_batch(8, with_text=False)
+show_images(images, n=8)
 
-noisy, _ = q_sample(images.to(device), torch.tensor([0, 8, 16, 32, 48, 63] + [63] * 10, device=device))
-show_images(noisy[:6], titles=[f"t={t}" for t in [0, 8, 16, 32, 48, 63]], n=6)
+noisy_steps = [0, 1, 2, 4, 6, 7]
+noisy, _ = q_sample(images[:6].to(device), torch.tensor(noisy_steps, device=device))
+show_images(noisy, titles=[f"t={t}" for t in noisy_steps], n=6)
 """),
         code(r"""
 class TinyImageDenoiser(nn.Module):
-    def __init__(self, channels=48):
+    def __init__(self, channels=16):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(4, channels, 3, padding=1), nn.SiLU(),
@@ -555,24 +577,24 @@ opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
 """),
         code(r"""
 losses = []
-for step in range(800):
-    x0 = make_shape_batch(64, with_text=False).to(device)
+for step in range(10):
+    x0 = make_shape_batch(8, with_text=False).to(device)
     t = torch.randint(0, T, (x0.shape[0],), device=device)
     xt, eps = q_sample(x0, t)
     pred = model(xt, t)
     loss = F.mse_loss(pred, eps)
     opt.zero_grad(); loss.backward(); opt.step()
     losses.append(loss.item())
-    if step % 200 == 0:
+    if step % 5 == 0:
         print(step, round(loss.item(), 4))
 
 plt.plot(losses)
 plt.title("tiny image diffusion loss")
-plt.show()
+show_plot()
 """),
         code(r"""
-samples = ddpm_sample(model, (16, 3, 32, 32)).cpu()
-show_images(samples, n=16)
+samples = ddpm_sample(model, (4, 3, 32, 32)).cpu()
+show_images(samples, n=4)
 """),
         md(r"""
 ## Interview Takeaway
@@ -589,6 +611,8 @@ def hw4():
 # HW4 - Tiny Autoencoder / VAE
 
 Question: why do modern text-to-image models generate latents instead of pixels?
+
+""" + GPU_NOTE + r"""
 
 Sources:
 
@@ -638,30 +662,30 @@ opt = torch.optim.AdamW(vae.parameters(), lr=2e-3)
 """),
         code(r"""
 losses = []
-for step in range(900):
-    x = make_shape_batch(64, with_text=False).to(device)
+for step in range(20):
+    x = make_shape_batch(8, with_text=False).to(device)
     recon, mu, logvar = vae(x)
     recon_loss = F.mse_loss(recon, x)
     kl = -0.5 * torch.mean(1 + logvar - mu.square() - logvar.exp())
     loss = recon_loss + 0.001 * kl
     opt.zero_grad(); loss.backward(); opt.step()
     losses.append((recon_loss.item(), kl.item()))
-    if step % 200 == 0:
+    if step % 10 == 0:
         print(step, "recon", round(recon_loss.item(), 4), "kl", round(kl.item(), 4))
 
 plt.plot([x for x, _ in losses], label="recon")
 plt.plot([k for _, k in losses], label="kl")
 plt.legend()
 plt.title("VAE training")
-plt.show()
+show_plot()
 """),
         code(r"""
 test = make_shape_batch(8, with_text=False).to(device)
 with torch.no_grad():
     recon, mu, logvar = vae(test)
-pair = torch.stack([test.cpu(), recon.cpu()], dim=1).reshape(-1, 3, 32, 32)
-titles = sum(([f"orig {i}", f"recon {i}"] for i in range(8)), [])
-show_images(pair, titles=titles, n=16)
+pair = torch.stack([test[:4].cpu(), recon[:4].cpu()], dim=1).reshape(-1, 3, 32, 32)
+titles = sum(([f"orig {i}", f"recon {i}"] for i in range(4)), [])
+show_images(pair, titles=titles, n=8)
 print("latent shape:", mu.shape)
 """),
         md(r"""
@@ -681,6 +705,8 @@ def hw5():
 # HW5 - Latent Diffusion Or Latent Flow
 
 Question: can we generate images by generating latents?
+
+""" + GPU_NOTE + r"""
 
 Sources:
 
@@ -722,12 +748,12 @@ class TinyAE(nn.Module):
 
 ae = TinyAE().to(device)
 opt_ae = torch.optim.AdamW(ae.parameters(), lr=2e-3)
-for step in range(700):
-    x = make_shape_batch(64, with_text=False).to(device)
+for step in range(20):
+    x = make_shape_batch(8, with_text=False).to(device)
     recon = ae(x)
     loss = F.mse_loss(recon, x)
     opt_ae.zero_grad(); loss.backward(); opt_ae.step()
-    if step % 200 == 0:
+    if step % 10 == 0:
         print("ae", step, round(loss.item(), 4))
 """),
         code(r"""
@@ -748,8 +774,8 @@ class LatentDenoiser(nn.Module):
 denoiser = LatentDenoiser().to(device)
 opt = torch.optim.AdamW(denoiser.parameters(), lr=2e-3)
 
-for step in range(1200):
-    x = make_shape_batch(128, with_text=False).to(device)
+for step in range(30):
+    x = make_shape_batch(8, with_text=False).to(device)
     with torch.no_grad():
         z0 = ae.encode(x)
     t = torch.randint(0, T, (z0.shape[0],), device=device)
@@ -757,14 +783,14 @@ for step in range(1200):
     pred = denoiser(zt, t)
     loss = F.mse_loss(pred, eps)
     opt.zero_grad(); loss.backward(); opt.step()
-    if step % 300 == 0:
+    if step % 10 == 0:
         print("latent ddpm", step, round(loss.item(), 4))
 """),
         code(r"""
 with torch.no_grad():
-    z = ddpm_sample(denoiser, (16, 64))
+    z = ddpm_sample(denoiser, (4, 64))
     imgs = ae.decode(z).cpu()
-show_images(imgs, n=16)
+show_images(imgs, n=4)
 """),
         md(r"""
 ## Interview Takeaway
@@ -781,6 +807,8 @@ def hw6():
 # HW6 - Text Conditioning
 
 Question: how does text become a useful condition for generation?
+
+""" + GPU_NOTE + r"""
 
 Sources:
 
@@ -799,7 +827,7 @@ print(tokenize(captions[:6]))
 """),
         code(r"""
 class TextConditionedDenoiser(nn.Module):
-    def __init__(self, vocab_size=len(VOCAB), dim=32, channels=64):
+    def __init__(self, vocab_size=len(VOCAB), dim=16, channels=16):
         super().__init__()
         self.text = nn.Embedding(vocab_size, dim)
         self.to_channels = nn.Linear(dim, 8)
@@ -820,8 +848,8 @@ model = TextConditionedDenoiser().to(device)
 opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
 """),
         code(r"""
-for step in range(1000):
-    x0, caps = make_shape_batch(64)
+for step in range(10):
+    x0, caps = make_shape_batch(8)
     x0 = x0.to(device)
     tok = tokenize(caps)
     t = torch.randint(0, T, (x0.shape[0],), device=device)
@@ -829,11 +857,11 @@ for step in range(1000):
     pred = model(xt, t, tok)
     loss = F.mse_loss(pred, eps)
     opt.zero_grad(); loss.backward(); opt.step()
-    if step % 250 == 0:
+    if step % 5 == 0:
         print(step, round(loss.item(), 4))
 """),
         code(r"""
-prompts = ["red circle", "blue circle", "green square", "yellow triangle"] * 4
+prompts = ["red circle", "blue circle", "green square", "yellow triangle"]
 tok = tokenize(prompts)
 
 @torch.no_grad()
@@ -859,6 +887,8 @@ def hw7():
 
 Question: how can prompts become stronger during sampling?
 
+""" + GPU_NOTE + r"""
+
 Sources:
 
 - Classifier-Free Diffusion Guidance: https://arxiv.org/abs/2207.12598
@@ -870,7 +900,7 @@ Sources:
         code(DIFFUSION),
         code(r"""
 class CFGDenoiser(nn.Module):
-    def __init__(self, vocab_size=len(VOCAB), dim=32, channels=64):
+    def __init__(self, vocab_size=len(VOCAB), dim=16, channels=16):
         super().__init__()
         self.text = nn.Embedding(vocab_size, dim)
         self.to_channels = nn.Linear(dim, 8)
@@ -893,8 +923,8 @@ model = CFGDenoiser().to(device)
 opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
 """),
         code(r"""
-for step in range(1200):
-    x0, caps = make_shape_batch(64)
+for step in range(10):
+    x0, caps = make_shape_batch(8)
     x0 = x0.to(device)
     tok = tokenize(caps, drop_prob=0.15)
     t = torch.randint(0, T, (x0.shape[0],), device=device)
@@ -902,11 +932,11 @@ for step in range(1200):
     pred = model(xt, t, tok)
     loss = F.mse_loss(pred, eps)
     opt.zero_grad(); loss.backward(); opt.step()
-    if step % 300 == 0:
+    if step % 5 == 0:
         print(step, round(loss.item(), 4))
 """),
         code(r"""
-prompt = ["red circle"] * 8
+prompt = ["red circle"] * 2
 tok = tokenize(prompt)
 
 @torch.no_grad()
@@ -914,18 +944,18 @@ def cond_fn(x, t, cond):
     return model(x, t, cond)
 
 all_samples, titles = [], []
-for scale in [0.0, 1.0, 3.0, 6.0]:
+for scale in [0.0, 3.0]:
     samples = ddpm_sample(
         model,
-        (8, 3, 32, 32),
+        (2, 3, 32, 32),
         cond=tok,
         guidance_scale=scale,
         cond_fn=cond_fn,
     )
     all_samples.append(samples.cpu())
-    titles += [f"scale {scale}"] * 8
+    titles += [f"scale {scale}"] * 2
 
-show_images(torch.cat(all_samples), titles, n=32, size=1.6)
+show_images(torch.cat(all_samples), titles, n=4, size=1.8)
 """),
         md(r"""
 ## Interview Takeaway
@@ -942,6 +972,8 @@ def hw8():
 # HW8 - Tiny DiT
 
 Question: how does a transformer replace a U-Net?
+
+""" + GPU_NOTE + r"""
 
 Sources:
 
@@ -977,14 +1009,14 @@ print("image:", x.shape, "tokens:", tokens.shape, "recon:", unpatchify(tokens).s
 """),
         code(r"""
 class TinyDiT(nn.Module):
-    def __init__(self, token_dim=48, model_dim=128, depth=3, text_dim=32):
+    def __init__(self, token_dim=48, model_dim=32, depth=1, text_dim=16):
         super().__init__()
         self.in_proj = nn.Linear(token_dim, model_dim)
         self.out_proj = nn.Linear(model_dim, token_dim)
         self.pos = nn.Parameter(torch.randn(1, 64, model_dim) * 0.02)
         self.text = nn.Embedding(len(VOCAB), text_dim)
         self.cond = nn.Linear(text_dim + 1, model_dim)
-        layer = nn.TransformerEncoderLayer(model_dim, nhead=4, dim_feedforward=256, batch_first=True, activation="gelu")
+        layer = nn.TransformerEncoderLayer(model_dim, nhead=4, dim_feedforward=64, batch_first=True, activation="gelu")
         self.blocks = nn.TransformerEncoder(layer, num_layers=depth)
 
     def forward(self, x, t, token_ids):
@@ -1001,8 +1033,8 @@ model = TinyDiT().to(device)
 opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
 """),
         code(r"""
-for step in range(800):
-    x0, caps = make_shape_batch(48)
+for step in range(5):
+    x0, caps = make_shape_batch(8)
     x0 = x0.to(device)
     tok = tokenize(caps)
     t = torch.randint(0, T, (x0.shape[0],), device=device)
@@ -1010,11 +1042,11 @@ for step in range(800):
     pred = model(xt, t, tok)
     loss = F.mse_loss(pred, eps)
     opt.zero_grad(); loss.backward(); opt.step()
-    if step % 200 == 0:
+    if step % 5 == 0:
         print(step, round(loss.item(), 4))
 """),
         code(r"""
-prompts = ["red circle", "blue square", "green triangle", "yellow circle"] * 4
+prompts = ["red circle", "blue square", "green triangle", "yellow circle"]
 samples = ddpm_sample(model, (len(prompts), 3, 32, 32), cond=tokenize(prompts)).cpu()
 show_images(samples, prompts, n=len(prompts))
 """),
@@ -1033,6 +1065,8 @@ def hw9():
 # HW9 - Tiny MMDiT-Style Conditioning
 
 Question: how do text tokens and image tokens interact?
+
+""" + GPU_NOTE + r"""
 
 Sources:
 
@@ -1063,7 +1097,7 @@ def unpatchify(tokens, patch=PATCH, channels=3, size=32):
 """),
         code(r"""
 class TinyMMDiT(nn.Module):
-    def __init__(self, token_dim=48, model_dim=128, depth=3):
+    def __init__(self, token_dim=48, model_dim=32, depth=1):
         super().__init__()
         self.img_in = nn.Linear(token_dim, model_dim)
         self.img_out = nn.Linear(model_dim, token_dim)
@@ -1071,7 +1105,7 @@ class TinyMMDiT(nn.Module):
         self.time = nn.Linear(1, model_dim)
         self.pos_img = nn.Parameter(torch.randn(1, 64, model_dim) * 0.02)
         self.pos_txt = nn.Parameter(torch.randn(1, 2, model_dim) * 0.02)
-        layer = nn.TransformerEncoderLayer(model_dim, nhead=4, dim_feedforward=256, batch_first=True, activation="gelu")
+        layer = nn.TransformerEncoderLayer(model_dim, nhead=4, dim_feedforward=64, batch_first=True, activation="gelu")
         self.blocks = nn.TransformerEncoder(layer, num_layers=depth)
 
     def forward(self, x, t, token_ids):
@@ -1093,8 +1127,8 @@ tok = tokenize(caps)
 print("caption tokens:", tok.shape)
 print("image latent tokens:", patchify(x0).shape)
 
-for step in range(900):
-    x0, caps = make_shape_batch(48)
+for step in range(5):
+    x0, caps = make_shape_batch(8)
     x0 = x0.to(device)
     tok = tokenize(caps)
     t = torch.randint(0, T, (x0.shape[0],), device=device)
@@ -1102,11 +1136,11 @@ for step in range(900):
     pred = model(xt, t, tok)
     loss = F.mse_loss(pred, eps)
     opt.zero_grad(); loss.backward(); opt.step()
-    if step % 300 == 0:
+    if step % 5 == 0:
         print(step, round(loss.item(), 4))
 """),
         code(r"""
-prompts = ["red circle", "blue square", "green triangle", "yellow triangle"] * 4
+prompts = ["red circle", "blue square", "green triangle", "yellow triangle"]
 samples = ddpm_sample(model, (len(prompts), 3, 32, 32), cond=tokenize(prompts)).cpu()
 show_images(samples, prompts, n=len(prompts))
 """),
@@ -1125,6 +1159,8 @@ def hw10():
 # HW10 - Final Tiny Qwen-Like Text-To-Image
 
 Question: can the pieces become one tiny end-to-end model?
+
+""" + GPU_NOTE + r"""
 
 Sources:
 
@@ -1159,7 +1195,7 @@ def unpatchify(tokens, patch=PATCH, channels=3, size=32):
 """),
         code(r"""
 class TinyQwenLikeT2I(nn.Module):
-    def __init__(self, mode="token", token_dim=48, model_dim=128, depth=3):
+    def __init__(self, mode="token", token_dim=48, model_dim=32, depth=1):
         super().__init__()
         assert mode in {"none", "pooled", "token"}
         self.mode = mode
@@ -1169,10 +1205,12 @@ class TinyQwenLikeT2I(nn.Module):
         self.time = nn.Linear(1, model_dim)
         self.pos_img = nn.Parameter(torch.randn(1, 64, model_dim) * 0.02)
         self.pos_txt = nn.Parameter(torch.randn(1, 2, model_dim) * 0.02)
-        layer = nn.TransformerEncoderLayer(model_dim, nhead=4, dim_feedforward=256, batch_first=True, activation="gelu")
+        layer = nn.TransformerEncoderLayer(model_dim, nhead=4, dim_feedforward=64, batch_first=True, activation="gelu")
         self.blocks = nn.TransformerEncoder(layer, num_layers=depth)
 
     def forward(self, x, t, token_ids=None):
+        if token_ids is None:
+            token_ids = torch.full((x.shape[0], 2), stoi["<null>"], dtype=torch.long, device=x.device)
         img = self.img_in(patchify(x)) + self.pos_img
         time = self.time((t.float() / (T - 1))[:, None])[:, None, :]
         img = img + time
@@ -1196,7 +1234,7 @@ def train_model(mode="token", steps=900, cond_drop=0.15):
     model = TinyQwenLikeT2I(mode=mode).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
     for step in range(steps):
-        x0, caps = make_shape_batch(48)
+        x0, caps = make_shape_batch(8)
         x0 = x0.to(device)
         drop = cond_drop if mode != "none" else 1.0
         tok = tokenize(caps, drop_prob=drop)
@@ -1212,7 +1250,7 @@ def train_model(mode="token", steps=900, cond_drop=0.15):
         code(r"""
 # Train the final token-conditioned model.
 # For a full ablation, also train modes "none" and "pooled".
-model = train_model("token", steps=900)
+model = train_model("token", steps=5)
 """),
         code(r"""
 @torch.no_grad()
@@ -1220,10 +1258,7 @@ def model_call(x, t, cond):
     return model(x, t, cond)
 
 
-prompts = [
-    "red circle", "blue square", "green triangle", "yellow circle",
-    "red square", "blue triangle", "green circle", "yellow triangle",
-] * 2
+prompts = ["red circle", "blue square"]
 tok = tokenize(prompts)
 samples = ddpm_sample(
     model,
@@ -1240,7 +1275,7 @@ RUN_ABLATIONS = False
 if RUN_ABLATIONS:
     results = {}
     for mode in ["none", "pooled", "token"]:
-        m = train_model(mode, steps=700)
+        m = train_model(mode, steps=5)
         cond = None if mode == "none" else tokenize(prompts)
         imgs = ddpm_sample(m, (len(prompts), 3, 32, 32), cond=cond).cpu()
         results[mode] = imgs

@@ -1,3 +1,6 @@
 torch
 matplotlib
-jupyter
+nbconvert
+ipykernel
+nbformat
+pillow

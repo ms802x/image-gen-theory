@@ -17,6 +17,14 @@ ALLOWED_MARKDOWN = {
     "README.md",
     "agent.md",
 }
+SKIP_DIRS = {
+    ".git",
+    ".miniforge",
+    ".venv",
+    "__pycache__",
+    ".ipynb_checkpoints",
+    "executed",
+}
 
 
 def fail(message):
@@ -27,6 +35,8 @@ def fail(message):
 def check_markdown_files():
     failures = 0
     for path in ROOT.rglob("*.md"):
+        if any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts):
+            continue
         rel = path.relative_to(ROOT).as_posix()
         if rel not in ALLOWED_MARKDOWN:
             failures += fail(f"unexpected markdown file: {rel}")

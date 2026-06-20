@@ -138,6 +138,8 @@ Every notebook should include:
 
 ## Setup
 
+The checked-in notebook outputs are CPU-smoke outputs. They verify that code executes, figures render, tensors have the expected shapes, and the sampler path is wired correctly. Many generated image grids are intentionally undertrained and may look like noise; run the same notebooks longer on a GPU for meaningful samples.
+
 Install dependencies:
 
 ```bash
@@ -150,10 +152,22 @@ Regenerate notebooks:
 python3 scripts/create_homework_notebooks.py
 ```
 
+Execute every notebook and save outputs in place:
+
+```bash
+python3 scripts/execute_notebooks.py
+```
+
 Validate repo health:
 
 ```bash
 python3 scripts/check_repo.py
+```
+
+Review executed notebook outputs:
+
+```bash
+python3 scripts/review_notebook_outputs.py
 ```
 
 Current environment note: this repo can validate notebook JSON and Python syntax without PyTorch installed, but executing the notebooks requires `torch`, `matplotlib`, and Jupyter.
