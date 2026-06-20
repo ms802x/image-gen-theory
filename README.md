@@ -6,6 +6,8 @@ The goal is to build intuition before reading the full mathematical theory, then
 
 Start with the homework sequence in [ROADMAP.md](ROADMAP.md).
 Use [NOTEBOOK_PLAN.md](NOTEBOOK_PLAN.md) when creating or adapting notebooks.
+Track public source surveys in [notes/notebook_sources.md](notes/notebook_sources.md).
+Start HW0 with [notes/hw0_system_map.md](notes/hw0_system_map.md).
 
 ## Focus
 
