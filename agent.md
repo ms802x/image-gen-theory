@@ -10,7 +10,8 @@ User preferences:
 - Focus first on 2D toy datasets, diffusion, and flow matching.
 - Prefer existing public notebooks, repos, papers, and tutorials over creating notebooks from scratch.
 - Ground recommendations in verifiable sources.
-- Be careful with licensing and reuse. Prefer resources with explicit permissive licenses.
+- Include useful public resources even when they are commercial, non-commercial, or have unclear licensing.
+- Be careful with copying and reuse. Prefer resources with explicit permissive licenses when vendoring code, and keep attribution/license files when copying licensed code.
 - Keep this folder linked to the personal GitHub repo only through its repo-local SSH key.
 - Do not assume generated notebooks are correct without verification.
 - Build intuition first, then connect each implementation detail back to the theory.
