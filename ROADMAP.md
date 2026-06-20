@@ -27,6 +27,8 @@ Use small datasets first:
 - Every homework must be runnable.
 - Every theory reading must answer a question raised by code.
 - Prefer grounded public repos, notebooks, papers, and demos over invented notebooks.
+- For each homework, search for existing notebooks first. If none are good enough, create a small notebook that cites and combines multiple sources.
+- Every notebook must explain differences between approaches and failure modes.
 - Start CPU-friendly. Use GPU only when the CPU experiment already taught the concept.
 - Overfitting tiny data is allowed and useful.
 - Quality is not the goal. Understanding the moving parts is the goal.
@@ -59,6 +61,7 @@ Deliverable:
 
 - A one-page diagram or bullet map.
 - A short explanation of the final tiny system in your own words.
+- A list of existing notebooks/repos that seem useful for the next three homeworks.
 
 Pass condition:
 
@@ -94,6 +97,7 @@ Deliverable:
 - Plot of target data.
 - Plot or animation of samples moving from noise to data.
 - Notes explaining what the velocity model predicts.
+- Source note comparing the notebooks/repos inspected before writing code.
 
 Pass condition:
 
@@ -125,6 +129,7 @@ Deliverable:
 - Plot of data at several noise levels.
 - Plot or animation of reverse denoising.
 - Short comparison: diffusion vs flow matching.
+- Source note explaining which DDPM notebooks or repos were inspected.
 
 Pass condition:
 
@@ -161,6 +166,7 @@ Deliverable:
 - Grid of generated samples.
 - Training loss curve.
 - Notes explaining image tensors as high-dimensional points.
+- Comparison note: what changed from 2D points to images.
 
 Pass condition:
 
@@ -192,6 +198,7 @@ Deliverable:
 - Original vs reconstructed image grid.
 - Latent size documentation.
 - Notes on what information the latent preserves or loses.
+- Failure note: examples where reconstruction loses information.
 
 Pass condition:
 
@@ -219,6 +226,7 @@ Deliverable:
 - Generated latent samples decoded into images.
 - Comparison with pixel-space generation from Homework 3.
 - Notes on speed, quality, and failure modes.
+- Explanation of what latent generation teaches about Qwen-like systems.
 
 Pass condition:
 
@@ -256,6 +264,7 @@ Deliverable:
 - Dataset preview: image + caption pairs.
 - Prompt-conditioned sample grid.
 - Failure cases where prompt is ignored or partially followed.
+- Comparison note: label conditioning vs text conditioning.
 
 Pass condition:
 
@@ -285,6 +294,7 @@ Deliverable:
 
 - Same prompt sampled at several guidance scales.
 - Notes on when guidance helps and when it breaks samples.
+- Visual grid showing under-guidance, useful guidance, and over-guidance.
 
 Pass condition:
 
@@ -317,6 +327,7 @@ Deliverable:
 - Diagram of token shapes through the model.
 - Sample grid from tiny text-conditioned DiT.
 - Notes comparing DiT vs previous MLP/U-Net model.
+- Source note comparing DiT implementations or notebooks inspected.
 
 Pass condition:
 
@@ -358,6 +369,7 @@ output image prediction: [B, T_img, D]
 
 - Prompt-conditioned samples.
 - Notes on how this is closer to Qwen-Image than the previous DiT.
+- Comparison note: pooled text embedding vs token-level text conditioning.
 
 Pass condition:
 
@@ -403,6 +415,12 @@ Final deliverable:
   - training objective
   - sampling loop
   - differences from real Qwen-Image
+- Source map showing which notebooks, repos, and papers influenced each component.
+- Ablation table:
+  - no text conditioning
+  - pooled text conditioning
+  - token-level conditioning
+  - low vs high guidance
 - Sample grid for prompts:
   - "red circle"
   - "blue square"
@@ -469,6 +487,7 @@ homeworks/
   hw10_final_tiny_qwen/
 notes/
   readings.md
+  notebook_sources.md
   qwen_mapping.md
 external/
   README.md

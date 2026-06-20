@@ -5,6 +5,7 @@ Small, controlled experiments and grounded public resources for learning image g
 The goal is to build intuition before reading the full mathematical theory, then use that understanding to build a tiny Qwen-Image-like text-to-image architecture.
 
 Start with the homework sequence in [ROADMAP.md](ROADMAP.md).
+Use [NOTEBOOK_PLAN.md](NOTEBOOK_PLAN.md) when creating or adapting notebooks.
 
 ## Focus
 
@@ -17,6 +18,7 @@ Start with the homework sequence in [ROADMAP.md](ROADMAP.md).
 - CPU-friendly PyTorch experiments
 - plots and animations that make the model behavior visible
 - public notebooks, repos, papers, and demos before generated notebooks
+- comparison between approaches, not blind application
 
 ## Resource Map
 
@@ -49,3 +51,10 @@ Start with the homework sequence in [ROADMAP.md](ROADMAP.md).
 ## Notes
 
 Commercial, non-commercial, and unclear-license resources can all be useful for personal learning. For copying code into this repo, keep attribution and preserve upstream license files when a license exists; verify unclear-license sources before vendoring them.
+
+Notebook policy:
+
+- First search for existing public notebooks, repos, demos, and papers.
+- Prefer running and annotating grounded notebooks before writing new ones.
+- If no good notebook exists, write a small notebook that clearly cites the sources it combines.
+- Each notebook should compare approaches and explain failure modes, not just show a working run.

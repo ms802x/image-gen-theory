@@ -7,6 +7,8 @@ Current end goal:
 - Build a tiny Qwen-Image-like text-to-image architecture for understanding.
 - The near-term target is text-to-image, not image editing.
 - The architecture should gradually work toward latent generation, text conditioning, and tiny DiT/MMDiT-style modeling.
+- The long-term learning goal is deep image-generation engineering ability: understand Qwen-style systems, their challenges, and why different approaches work or fail.
+- Do not state aspirational career goals in public-facing repo docs; keep public docs focused on the technical learning path.
 
 User preferences:
 
@@ -21,6 +23,10 @@ User preferences:
 - Keep this folder linked to the personal GitHub repo only through its repo-local SSH key.
 - Do not assume generated notebooks are correct without verification.
 - Build intuition first, then connect each implementation detail back to the theory.
+- Always prefer existing public notebooks first. If an adequate notebook does not exist, create one only after surveying multiple sources.
+- When creating a notebook, cite the sources it combines and explain which parts came from which upstream idea.
+- Notebooks should teach differences between approaches, failure modes, tensor shapes, training objectives, and sampling behavior.
+- The user wants to understand, not blindly apply recipes.
 
 Current repo remote:
 
