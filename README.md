@@ -2,13 +2,18 @@
 
 Small, controlled experiments and grounded public resources for learning image generation theory from code first.
 
-The goal is to build intuition before reading the full mathematical theory.
+The goal is to build intuition before reading the full mathematical theory, then use that understanding to build a tiny Qwen-Image-like text-to-image architecture.
+
+Start with [ROADMAP.md](ROADMAP.md).
 
 ## Focus
 
 - 2D toy datasets
 - diffusion from scratch
 - flow matching from scratch
+- tiny text-to-image
+- tiny DiT / MMDiT-style architecture
+- latent image generation
 - CPU-friendly PyTorch experiments
 - plots and animations that make the model behavior visible
 - public notebooks, repos, papers, and demos before generated notebooks

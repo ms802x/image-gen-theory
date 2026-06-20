@@ -2,6 +2,12 @@
 
 This repo is for learning image generation theory through grounded, code-first experiments.
 
+Current end goal:
+
+- Build a tiny Qwen-Image-like text-to-image architecture for understanding.
+- The near-term target is text-to-image, not image editing.
+- The architecture should gradually work toward latent generation, text conditioning, and tiny DiT/MMDiT-style modeling.
+
 User preferences:
 
 - Prefer Karpathy-style learning: small, controlled experiments before heavy theory.
