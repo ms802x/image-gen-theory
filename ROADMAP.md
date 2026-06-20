@@ -1,200 +1,310 @@
-# Karpathy-Style Roadmap To Tiny Qwen-Like Text-To-Image
+# Homework Roadmap: Tiny Qwen-Like Text-To-Image
 
-End goal: build a tiny Qwen-Image-like text-to-image system for understanding, not quality.
+End goal: build a tiny Qwen-Image-like text-to-image model for understanding, not quality.
 
-The target is not image editing yet. The target is a minimal text-to-image architecture with the same broad ingredients:
+This is a homework sequence. Each homework should leave behind code, plots, notes, and a short conclusion. The final homework combines the earlier pieces into a much smaller Qwen-like architecture.
 
-- a latent image representation
-- a text condition encoder
-- a diffusion or flow-matching generative core
-- a transformer/DiT-style denoiser or velocity model
-- a small training dataset with text-image pairs
-- sampling that turns text + noise into an image
+Target final system:
 
-## Rules
+```text
+caption -> tiny text encoder -> text tokens
+noise latent -> patch tokens
+timestep -> time embedding
+text tokens + image tokens -> tiny DiT/MMDiT
+predicted velocity/noise -> sampler loop
+generated latent -> decoder -> image
+```
+
+Use small datasets first:
+
+- 2D points
+- MNIST
+- synthetic 16x16 or 32x32 colored shapes with captions
+
+## Course Rules
 
 - Code first, theory second.
-- Each theory idea must connect to a runnable experiment.
-- Start in 2D or tiny images before real image datasets.
+- Every homework must be runnable.
+- Every theory reading must answer a question raised by code.
 - Prefer grounded public repos, notebooks, papers, and demos over invented notebooks.
-- Keep experiments small enough to run on CPU when possible.
-- When GPU becomes useful, use it only after the CPU version teaches the idea.
+- Start CPU-friendly. Use GPU only when the CPU experiment already taught the concept.
+- Overfitting tiny data is allowed and useful.
+- Quality is not the goal. Understanding the moving parts is the goal.
 
-## Phase 0: Orientation
+## Homework 0: Map The System
 
-Goal: know the system shape before touching papers.
+Question:
 
-Build/read:
+What pieces does a Qwen-like text-to-image system need?
 
-- Draw the pipeline by hand:
-  - text prompt
+Task:
+
+- Draw the full pipeline in `notes/hw0_system_map.md`.
+- Identify each component:
+  - text tokenizer
   - text encoder
-  - noise latent
-  - timestep
-  - transformer denoiser/velocity model
-  - VAE decoder or direct pixel decoder
-  - image
+  - image representation
+  - noise process
+  - timestep embedding
+  - generative model
+  - sampler
+  - decoder
 
-Read:
+Reading:
 
 - Qwen-Image Technical Report abstract and architecture sections.
-- Do not read training-scale details yet.
+- Do not read data scaling details yet.
 
-Checkpoint:
+Deliverable:
 
-- You can explain the model in one sentence:
-  "A text encoder conditions a latent diffusion/flow transformer that maps noise into image latents, then a decoder turns latents into pixels."
+- A one-page diagram or bullet map.
+- A short explanation of the final tiny system in your own words.
 
-## Phase 1: 2D Flow Matching
+Pass condition:
 
-Goal: understand generation as moving noise into data.
+- You can say what each model component consumes and produces.
 
-Run/inspect:
+## Homework 1: 2D Flow Matching
 
-- TorchCFM 2D tutorials.
-- Start with moons, circles, Gaussian blobs, or spirals.
+Question:
 
-Implement only after running a grounded version:
+How can a model learn to move noise into data?
 
-- Tiny MLP velocity model.
+Task:
+
+- Run or inspect TorchCFM's 2D examples.
+- Build or adapt a tiny 2D flow-matching experiment.
+- Dataset: moons, spirals, circles, or Gaussian blobs.
+- Model: small MLP.
 - Input: `x_t`, `t`.
 - Output: velocity.
-- Sample with simple Euler steps.
+- Sampler: Euler integration.
 
-Theory to read:
+Reading:
 
+- TorchCFM 2D tutorial.
 - Flow Matching for Generative Modeling:
   - intro
   - conditional flow matching objective
-  - ODE sampling picture
+  - ODE sampling idea
 
-Checkpoint:
+Deliverable:
 
-- You can animate random points becoming the target 2D distribution.
-- You understand that the network predicts "which way should this point move now?"
+- Plot of source noise.
+- Plot of target data.
+- Plot or animation of samples moving from noise to data.
+- Notes explaining what the velocity model predicts.
 
-## Phase 2: 2D Diffusion
+Pass condition:
 
-Goal: understand generation as denoising.
+- Random 2D noise visibly becomes the target distribution.
 
-Run/inspect:
+## Homework 2: 2D Diffusion
 
-- A small DDPM implementation.
-- Use public tutorials as reference, but keep the experiment tiny.
+Question:
 
-Implement:
+How is denoising different from flow?
 
-- Add noise to 2D points at timestep `t`.
-- Tiny MLP predicts noise or clean point.
-- Sampling starts from noise and denoises step by step.
+Task:
 
-Theory to read:
+- Build a tiny 2D DDPM-style experiment.
+- Dataset: same as Homework 1.
+- Add noise to clean points at random timestep `t`.
+- Train an MLP to predict noise or clean point.
+- Sample by iterative denoising.
+
+Reading:
 
 - DDPM paper:
-  - forward noising process
-  - reverse denoising process
+  - forward noising
+  - reverse denoising
   - noise prediction loss
 
-Checkpoint:
+Deliverable:
 
-- You can explain the difference:
+- Plot of data at several noise levels.
+- Plot or animation of reverse denoising.
+- Short comparison: diffusion vs flow matching.
+
+Pass condition:
+
+- You can explain:
   - diffusion predicts how to remove noise
-  - flow matching predicts motion from noise to data
+  - flow matching predicts how a sample should move
 
-## Phase 3: Tiny Images Without Text
+## Homework 3: Tiny Unconditional Images
 
-Goal: move from points to images without adding text complexity yet.
+Question:
 
-Dataset options:
+What changes when the data is an image instead of a 2D point?
 
-- MNIST
-- Fashion-MNIST
-- synthetic 16x16 shapes
+Task:
 
-Implement:
+- Train a tiny unconditional image generator.
+- Dataset options:
+  - MNIST
+  - Fashion-MNIST
+  - synthetic 16x16 shapes
+- Model options:
+  - tiny U-Net
+  - tiny image transformer
+  - tiny MLP for very small images
+- Use diffusion or flow matching.
 
-- Pixel-space DDPM or flow model first.
-- Tiny U-Net or tiny transformer.
-- Generate unconditional images.
+Reading:
 
-Theory to read:
+- Diffusion Explainer.
+- DDPM sections that match your code.
 
-- Diffusion Explainer for intuition.
-- DDPM details only where they match your code.
+Deliverable:
 
-Checkpoint:
+- Grid of generated samples.
+- Training loss curve.
+- Notes explaining image tensors as high-dimensional points.
 
-- You can sample recognizable tiny images from noise.
-- You understand image tensors as just high-dimensional points.
+Pass condition:
 
-## Phase 4: Latent Space And VAE
+- The model generates recognizable tiny images or clearly learns the synthetic distribution.
 
-Goal: understand why Qwen-like systems generate latents, not pixels.
+## Homework 4: Tiny Autoencoder / VAE
 
-Build/read:
+Question:
 
-- Train a tiny autoencoder or VAE on MNIST/synthetic shapes.
-- Encode image to latent.
-- Decode latent back to image.
-- Then train diffusion/flow in latent space.
+Why do modern text-to-image models generate latents instead of pixels?
 
-Theory to read:
+Task:
+
+- Train a tiny autoencoder or VAE.
+- Dataset: same as Homework 3.
+- Encode images into latents.
+- Decode latents back to images.
+- Measure reconstruction quality by visual comparison.
+
+Reading:
 
 - Latent Diffusion paper:
-  - why latent diffusion is cheaper
-  - VAE encoder/decoder role
-  - conditioning overview
+  - VAE role
+  - latent-space generation
+  - why it is cheaper than pixel generation
 
-Checkpoint:
+Deliverable:
 
-- You can generate a latent from noise and decode it into an image.
-- You understand that VAE quality limits final image quality.
+- Original vs reconstructed image grid.
+- Latent size documentation.
+- Notes on what information the latent preserves or loses.
 
-## Phase 5: Text Conditioning
+Pass condition:
 
-Goal: make text affect generation.
+- Reconstructions are good enough that a latent generator could use them.
 
-Dataset options:
+## Homework 5: Latent Diffusion Or Latent Flow
 
-- Synthetic shapes with captions:
-  - "red circle"
-  - "blue square"
-  - "three green dots"
-- MNIST with labels converted to text:
-  - "digit zero"
-  - "digit seven"
+Question:
 
-Implement:
+Can we generate images by generating latents?
 
-- Tiny tokenizer.
-- Tiny text encoder:
-  - embedding average first
-  - then small transformer later
-- Condition the diffusion/flow model with text embedding.
+Task:
 
-Theory to read:
+- Freeze the autoencoder/VAE from Homework 4.
+- Train a diffusion or flow model in latent space.
+- Decode generated latents back to images.
+
+Reading:
+
+- Latent Diffusion paper sections on latent generative modeling.
+- Revisit Flow Matching or DDPM depending on which objective you use.
+
+Deliverable:
+
+- Generated latent samples decoded into images.
+- Comparison with pixel-space generation from Homework 3.
+- Notes on speed, quality, and failure modes.
+
+Pass condition:
+
+- You can sample images through:
+
+```text
+noise -> latent generator -> latent -> decoder -> image
+```
+
+## Homework 6: Text-Conditioned Tiny Dataset
+
+Question:
+
+How does text become a useful condition for image generation?
+
+Task:
+
+- Create or use a tiny text-image dataset.
+- Recommended dataset:
+  - synthetic colored shapes
+  - captions like "red circle", "blue square", "three green dots"
+- Build:
+  - tiny tokenizer
+  - text embedding table
+  - pooled text embedding
+- Condition the latent/image generator on text.
+
+Reading:
 
 - Classifier-free guidance explanation.
-- Cross-attention basics if using cross-attention.
+- Cross-attention basics only if using cross-attention.
 
-Checkpoint:
+Deliverable:
 
-- Prompt changes the generated image.
-- You can overfit a tiny dataset intentionally.
+- Dataset preview: image + caption pairs.
+- Prompt-conditioned sample grid.
+- Failure cases where prompt is ignored or partially followed.
 
-## Phase 6: Tiny DiT
+Pass condition:
 
-Goal: replace U-Net/MLP with a transformer-style image generator.
+- Changing the prompt changes the generated image in the expected direction.
 
-Implement:
+## Homework 7: Classifier-Free Guidance
 
-- Patchify tiny image latents into tokens.
+Question:
+
+How can prompts become stronger during sampling?
+
+Task:
+
+- Add condition dropout during training.
+- During sampling, run both:
+  - conditional prediction
+  - unconditional prediction
+- Combine them with a guidance scale.
+- Test multiple guidance scales.
+
+Reading:
+
+- Classifier-free guidance paper or a grounded explanation.
+- Read only enough to connect to the two forward passes.
+
+Deliverable:
+
+- Same prompt sampled at several guidance scales.
+- Notes on when guidance helps and when it breaks samples.
+
+Pass condition:
+
+- You can explain classifier-free guidance as "push away from unconditional generation toward prompt-conditioned generation."
+
+## Homework 8: Tiny DiT
+
+Question:
+
+How does a transformer replace a U-Net in image generation?
+
+Task:
+
+- Patchify image latents into tokens.
 - Add timestep embedding.
 - Add text conditioning.
-- Use transformer blocks to predict noise or velocity.
-- Unpatchify back to latent/image shape.
+- Train a tiny DiT to predict noise or velocity.
+- Unpatchify predictions back to latent/image shape.
 
-Theory to read:
+Reading:
 
 - DiT paper:
   - patch tokens
@@ -202,85 +312,167 @@ Theory to read:
   - transformer denoiser
   - scaling intuition
 
-Checkpoint:
+Deliverable:
 
-- You have a tiny text-conditioned DiT that can generate simple images.
-- You understand why modern systems moved from U-Nets toward transformers.
+- Diagram of token shapes through the model.
+- Sample grid from tiny text-conditioned DiT.
+- Notes comparing DiT vs previous MLP/U-Net model.
 
-## Phase 7: Tiny MMDiT / Qwen-Like Conditioning
+Pass condition:
 
-Goal: mimic the broad Qwen-Image architecture shape.
+- Your transformer model can generate simple prompt-conditioned images.
 
-Implement:
+## Homework 9: Tiny MMDiT-Style Conditioning
 
-- Separate text tokens and image latent tokens.
-- A small multimodal transformer where text/image tokens interact.
-- Predict velocity or noise for image latent tokens only.
+Question:
 
-Study:
+How do text tokens and image tokens interact in a Qwen-like model?
+
+Task:
+
+- Stop using only pooled text embeddings.
+- Keep text as a sequence of tokens.
+- Keep image latents as a sequence of patch tokens.
+- Build a tiny multimodal transformer:
+  - text tokens attend with image tokens, or
+  - separate streams with controlled interaction
+- Predict noise or velocity for image tokens only.
+
+Reading:
 
 - Qwen-Image Technical Report:
   - MMDiT
-  - text rendering motivation
-  - conditioning pipeline
-  - multi-stage training
-- Qwen-Image-2.0 report only after the small version works.
+  - text conditioning
+  - model architecture
+- Revisit DiT if token shapes are confusing.
 
-Checkpoint:
+Deliverable:
 
-- You can point to your tiny model and say:
-  - this is the text encoder
-  - this is the latent representation
-  - this is the multimodal diffusion transformer
-  - this is the sampler
-
-## Phase 8: Scaling Lessons
-
-Goal: understand what the paper adds beyond the toy version.
-
-Study:
-
-- Qwen-Image data pipeline.
-- Qwen-Image training curriculum.
-- Qwen-Image VAE report.
-- Prompt following and text rendering benchmarks.
-
-Do not attempt first:
-
-- billion-scale data
-- full OCR-heavy text rendering
-- production VAE training
-- full Qwen-quality model
-
-Checkpoint:
-
-- You understand which parts are science/architecture and which parts are scale/data/engineering.
-
-## Final Tiny Architecture
-
-Minimum successful project:
+- Shape trace:
 
 ```text
-caption -> tiny text encoder -> text tokens
-noise latent -> patch tokens
-timestep -> time embedding
-text tokens + image tokens -> tiny MMDiT/DiT
-predicted velocity/noise -> sampler loop
-generated latent -> decoder -> image
+caption tokens: [B, T_text, D]
+image latent tokens: [B, T_img, D]
+output image prediction: [B, T_img, D]
 ```
 
-Recommended first dataset:
+- Prompt-conditioned samples.
+- Notes on how this is closer to Qwen-Image than the previous DiT.
+
+Pass condition:
+
+- You can point to:
+  - text token stream
+  - image token stream
+  - multimodal transformer
+  - image-token prediction head
+
+## Homework 10: Final Project - Tiny Qwen-Like Text-To-Image
+
+Question:
+
+Can we assemble a tiny Qwen-like architecture end to end?
+
+Task:
+
+- Build the final tiny model:
+  - synthetic captioned image dataset
+  - tiny tokenizer
+  - tiny text encoder
+  - tiny autoencoder/VAE or simple learned latent space
+  - tiny DiT/MMDiT denoiser or velocity model
+  - diffusion or flow-matching training objective
+  - classifier-free guidance
+  - sampler
+  - decoder
+
+Recommended constraints:
+
+- Images: 16x16 or 32x32.
+- Dataset: colored shapes with captions.
+- Text vocabulary: fewer than 100 tokens.
+- Model: small enough to train/debug locally.
+- Quality target: prompt following, not beauty.
+
+Final deliverable:
+
+- `final_project/` folder with runnable training and sampling scripts.
+- README explaining:
+  - architecture
+  - tensor shapes
+  - training objective
+  - sampling loop
+  - differences from real Qwen-Image
+- Sample grid for prompts:
+  - "red circle"
+  - "blue square"
+  - "green triangle"
+  - "two yellow circles"
+  - deliberately hard prompts
+
+Pass condition:
+
+- Given a simple caption, the model generates an image that roughly matches the caption.
+- You can explain how the final model maps:
 
 ```text
-16x16 or 32x32 synthetic colored shapes with generated captions
+text + noise -> image
 ```
 
-Why synthetic first:
+## Homework 11: Paper Mapping
 
-- perfect labels
-- fast CPU training
-- easy debugging
-- you can know immediately whether prompt following works
+Question:
+
+Which parts of Qwen-Image are architecture, data, scale, or engineering?
+
+Task:
+
+- Read Qwen-Image Technical Report more carefully.
+- Map each paper component to your tiny implementation:
+  - same idea
+  - simplified version
+  - missing entirely
+  - impossible without scale
+
+Optional reading:
+
+- Qwen-Image-VAE-2.0.
+- Qwen-Image-2.0.
+
+Deliverable:
+
+- `notes/qwen_mapping.md`
+- Table with columns:
+  - Qwen component
+  - tiny version
+  - what was learned
+  - what remains unknown
+
+Pass condition:
+
+- You understand the gap between a toy implementation and the real paper without treating the paper as magic.
+
+## Suggested Repo Layout
+
+```text
+homeworks/
+  hw0_system_map/
+  hw1_2d_flow/
+  hw2_2d_diffusion/
+  hw3_tiny_images/
+  hw4_autoencoder/
+  hw5_latent_generation/
+  hw6_text_conditioning/
+  hw7_cfg/
+  hw8_tiny_dit/
+  hw9_tiny_mmdit/
+  hw10_final_tiny_qwen/
+notes/
+  readings.md
+  qwen_mapping.md
+external/
+  README.md
+```
 
 ## Reading Priority
 
@@ -288,9 +480,10 @@ Why synthetic first:
 2. Flow Matching for Generative Modeling.
 3. DDPM.
 4. Latent Diffusion.
-5. DiT.
-6. Qwen-Image Technical Report.
-7. Qwen-Image-VAE-2.0.
-8. Qwen-Image-2.0.
+5. Classifier-Free Guidance.
+6. DiT.
+7. Qwen-Image Technical Report.
+8. Qwen-Image-VAE-2.0.
+9. Qwen-Image-2.0.
 
 Only read math deeply after you can point to the exact line of code it explains.

@@ -4,7 +4,7 @@ Small, controlled experiments and grounded public resources for learning image g
 
 The goal is to build intuition before reading the full mathematical theory, then use that understanding to build a tiny Qwen-Image-like text-to-image architecture.
 
-Start with [ROADMAP.md](ROADMAP.md).
+Start with the homework sequence in [ROADMAP.md](ROADMAP.md).
 
 ## Focus
 
